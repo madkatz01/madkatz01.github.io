@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bronchoscopic Medications Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .content-section {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        /* Enhanced button styles */
+        .action-button {
+            transition: all 0.3s ease;
+        }
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .info-card {
+            transition: box-shadow 0.3s ease-in-out;
+        }
+        .info-card:hover {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            background-color: white; /* Ensure it has a background */
+            z-index: 10; /* Ensure it stays on top of other content */
+            padding-bottom: 1rem; /* Add some padding below */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Optional: add a subtle shadow */
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-sky-100 min-h-screen p-4 md:p-8">
+    <div class="container mx-auto max-w-5xl bg-white p-6 md:p-8 rounded-xl shadow-2xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-sky-700">Bronchoscopic Medications Guide</h1>
+            <p class="text-slate-600 mt-2 text-sm md:text-base">Select a medication to view dosing information, CHOP experience, and relevant literature.</p>
+        </header>
+
+        <div class="mb-6 md:mb-8 sticky-header">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div class="md:col-span-2">
+                    <label for="medication-search" class="block text-sm font-medium text-slate-700 mb-1">Search Medication:</label>
+                    <input type="text" id="medication-search" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow" placeholder="Type to filter medications...">
+                </div>
+                <div>
+                    <label for="medication-select" class="block text-sm font-medium text-slate-700 mb-1">Select Medication:</label>
+                    <select id="medication-select" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow">
+                        <option value="">-- Select a Medication --</option>
+                    </select>
+                </div>
+            </div>
+             <button id="clear-selection" class="mt-4 w-full md:w-auto bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md action-button">Clear Selection / Show All</button>
+        </div>
+
+        <div id="medication-details" class="space-y-6">
+            <div class="text-center text-slate-500 italic p-10">
+                Please select a medication from the dropdown or use the search bar.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Pre-processed Data from CSVs ---
+        const dosingData = [
+            { medication: "Lidocaine", indication: "Topical Anesthesia, Anti-tussive, Anti-arrhythmic", doseMgPerKg: "1-4 mg/kg (max 7mg/kg with epi)", concentrationMgPerMl: "1% (10mg/ml) or 2% (20mg/ml) or 4% (40mg/ml)", volumeMlPerKg: "0.1-0.4 ml/kg (1%) or 0.05-0.2 ml/kg (2%) or 0.025-0.1 ml/kg (4%)", maxDoseMg: "No consensus, generally 4-7mg/kg. Consider total dose including IV.", mechanism: "Blocks sodium channels, stabilizing neuronal membranes and inhibiting nerve impulse initiation and conduction.", notes: "Rapid onset (2-5 min), duration 30-60 min. Metabolized by liver. Caution in liver disease, heart failure, arrhythmias. Methemoglobinemia is a rare but serious side effect." },
+            { medication: "Epinephrine (Racemic)", indication: "Airway Edema / Stridor / Bleeding", doseMgPerKg: "0.25-0.5 mL of 2.25% solution diluted in 2-3 mL NS (Max 0.5mL for <20kg, 1mL for >20kg)", concentrationMgPerMl: "2.25% solution (for nebulization/instillation) OR 1mg/mL (1:1000) for topical application (very small amounts)", volumeMlPerKg: "Dilute in NS for instillation/nebulization. For topical: 0.1-0.5mL of 1:10,000 or 1:100,000.", maxDoseMg: "Max 0.5mL of 2.25% for <20kg, 1mL for >20kg for nebulization. Topical use should be minimal and highly diluted.", mechanism: "Alpha and Beta adrenergic agonist. Causes vasoconstriction (alpha-1), bronchodilation (beta-2), increased heart rate/contractility (beta-1).", notes: "Onset <5 min, duration 1-2 hours. Use with caution in patients with cardiac disease, hypertension, hyperthyroidism. Can cause tachycardia, arrhythmias, hypertension, tremors, anxiety." },
+            { medication: "Tranexamic Acid (TXA)", indication: "Bleeding (oozing from biopsy site, diffuse alveolar hemorrhage)", doseMgPerKg: "10-20 mg/kg IV prior to procedure OR 250-500mg diluted in 10-20mL NS instilled topically", concentrationMgPerMl: "IV: 100mg/mL. For topical instillation: dilute to 25-50mg/mL.", volumeMlPerKg: "For topical: dilute 2.5-5mL of 100mg/mL solution into 10-20mL NS.", maxDoseMg: "IV: Max 1g. Topical: Max 500mg per application, may repeat.", mechanism: "Antifibrinolytic. Inhibits plasminogen activation, thereby preventing fibrin degradation and stabilizing clots.", notes: "Monitor for thrombotic events (rare). Contraindicated in active thromboembolic disease. Dose adjustment may be needed in renal impairment." },
+            { medication: "Atropine", indication: "Bradycardia / Secretions", doseMgPerKg: "0.01-0.02 mg/kg IV/IM/SC (Min dose 0.1mg, Max single dose 0.5mg child, 1mg adolescent)", concentrationMgPerMl: "0.4 mg/mL or 1 mg/mL", volumeMlPerKg: "0.025-0.05 mL/kg of 0.4mg/mL solution.", maxDoseMg: "Max total dose: 1mg for child, 2mg for adolescent.", mechanism: "Anticholinergic. Blocks acetylcholine at muscarinic receptors. Increases heart rate, reduces secretions, relaxes bronchial smooth muscle.", notes: "Can cause tachycardia, dry mouth, blurred vision, urinary retention, flushing. Use with caution in glaucoma, tachyarrhythmias." },
+            { medication: "Glycopyrrolate", indication: "Bradycardia / Secretions", doseMgPerKg: "0.004-0.01 mg/kg IV/IM (Max 0.2mg single dose, max total 0.04mg/kg or 0.6mg)", concentrationMgPerMl: "0.2 mg/mL", volumeMlPerKg: "0.02-0.05 mL/kg", maxDoseMg: "Max 0.2mg per dose. Max total 0.6mg.", mechanism: "Anticholinergic. Similar to atropine but less CNS effects and longer duration. More potent antisialagogue effect.", notes: "Less tachycardia than atropine. Similar peripheral side effects. Does not cross blood-brain barrier significantly." },
+            { medication: "Normal Saline (0.9% NaCl)", indication: "Lavage / Diluent / Mucolytic (hydration)", doseMgPerKg: "Variable, typically 1-5 mL/kg per aliquot for lavage, smaller volumes for medication delivery.", concentrationMgPerMl: "0.9% NaCl (9mg/mL)", volumeMlPerKg: "As needed.", maxDoseMg: "No specific max for lavage if tolerated; monitor for fluid overload, especially in small infants or cardiac patients.", mechanism: "Isotonic solution. Used for airway lavage to clear secretions, obtain samples, or as a vehicle for medication delivery. Hydrates mucus.", notes: "Generally safe. Large volumes can cause transient hypoxemia or cough. Ensure instilled fluid is suctioned back." },
+            { medication: "Acetylcysteine (Mucomyst)", indication: "Mucolytic (thick secretions, mucus plugs)", doseMgPerKg: "3-5 mL of 10% or 20% solution, may dilute with equal volume of NS. Instill directly or nebulize.", concentrationMgPerMl: "10% (100mg/mL) or 20% (200mg/mL)", volumeMlPerKg: "Dilute 1:1 with NS if using for instillation.", maxDoseMg: "Not well defined for direct instillation; typically single dose application.", mechanism: "Breaks disulfide bonds in mucoproteins, reducing viscosity of mucus.", notes: "Can cause bronchospasm; premedicate with bronchodilator. Rotten egg odor. Can irritate airways. Nausea/vomiting if swallowed." },
+            { medication: "Dornase Alfa (Pulmozyme)", indication: "Mucolytic (CF, purulent secretions with high DNA content)", doseMgPerKg: "2.5 mg (one ampule) undiluted, once or twice daily via nebulizer (off-label for direct instillation during bronchoscopy)", concentrationMgPerMl: "1 mg/mL (2.5mL ampule)", volumeMlPerKg: "2.5 mL (one ampule)", maxDoseMg: "Standard dose is 2.5mg.", mechanism: "Recombinant human deoxyribonuclease I (rhDNase). Cleaves extracellular DNA in purulent secretions, reducing viscoelasticity.", notes: "Voice alteration, pharyngitis, rash. Generally well-tolerated. Expensive. Primarily for CF patients." },
+            { medication: "Surfactant (Poractant alfa - Curosurf)", indication: "Surfactant Deficiency (ARDS, severe pneumonia, meconium aspiration) - Rescue therapy", doseMgPerKg: "Initial dose: 2.5 mL/kg (200 mg/kg). Subsequent doses: 1.25 mL/kg (100 mg/kg) q12h PRN. Max total 5mL/kg.", concentrationMgPerMl: "80 mg/mL (Suspension)", volumeMlPerKg: "Initial: 2.5 mL/kg. Subsequent: 1.25 mL/kg.", maxDoseMg: "Max total dose 400mg/kg (5mL/kg).", mechanism: "Exogenous pulmonary surfactant. Replaces deficient or dysfunctional endogenous surfactant, reducing surface tension in alveoli, improving lung compliance and gas exchange.", notes: "Administer in aliquots to different lung segments. May cause transient hypoxia, bradycardia, or airway obstruction during administration. Monitor vital signs closely." },
+            { medication: "Budesonide", indication: "Airway Inflammation (e.g., post-intubation stridor, severe asthma exacerbation - adjunctive)", doseMgPerKg: "0.25-0.5 mg nebulized. For direct instillation, data is limited, consider lower end or dilute.", concentrationMgPerMl: "0.25 mg/mL or 0.5 mg/mL respules for nebulization.", volumeMlPerKg: "1-2 mL of either concentration for nebulization.", maxDoseMg: "Typically 0.5-1mg total per treatment.", mechanism: "Inhaled corticosteroid. Anti-inflammatory effects by inhibiting multiple inflammatory cell types and mediators.", notes: "Local side effects (thrush, dysphonia) are rare with short-term use. Systemic absorption is minimal but possible with high doses or prolonged use." },
+            { medication: "Albuterol", indication: "Bronchospasm", doseMgPerKg: "2.5-5 mg (0.25-0.5 mL of 0.5% solution) diluted in 2-3 mL NS via nebulizer. MDI: 4-8 puffs. For direct instillation: data limited, much smaller doses likely needed.", concentrationMgPerMl: "0.5% solution (5mg/mL) for nebulization. MDI: 100mcg/puff.", volumeMlPerKg: "0.25-0.5 mL of 0.5% solution for nebulization.", maxDoseMg: "Max nebulized dose typically 5mg.", mechanism: "Selective Beta-2 adrenergic agonist. Relaxes bronchial smooth muscle, leading to bronchodilation.", notes: "Tachycardia, tremors, hypokalemia (with high doses), nervousness. Onset 5-15 min, duration 3-6 hours." },
+            { medication: "Ipratropium Bromide", indication: "Bronchospasm (adjunctive, especially cholinergic-mediated)", doseMgPerKg: "0.25-0.5 mg (1-2 mL of 0.02% solution) via nebulizer. MDI: 2-4 puffs.", concentrationMgPerMl: "0.02% solution (0.2mg/mL or 200mcg/mL) for nebulization. MDI: 20mcg/puff.", volumeMlPerKg: "1.25-2.5 mL of 0.02% solution (delivers 0.25-0.5mg).", maxDoseMg: "Max nebulized dose typically 0.5mg.", mechanism: "Anticholinergic. Blocks acetylcholine at muscarinic receptors in bronchial smooth muscle, causing bronchodilation. Slower onset than albuterol.", notes: "Dry mouth, blurred vision (if sprayed in eyes), urinary retention (rare). Generally well-tolerated." },
+            { medication: "Mitomycin C", indication: "Airway Stenosis (prevention of recurrence after dilation/resection) - Topical application", doseMgPerKg: "0.4-1 mg/mL solution applied topically with soaked pledgets for 2-5 minutes.", concentrationMgPerMl: "Reconstitute powder (e.g., 5mg vial with 5mL SWFI = 1mg/mL). Further dilute if needed.", volumeMlPerKg: "Variable, depends on size of area. Usually 1-2 mL of solution is sufficient for soaking pledgets.", maxDoseMg: "Max concentration 1mg/mL. Total dose applied is usually low due to topical nature.", mechanism: "Alkylating agent, antineoplastic. Inhibits DNA synthesis, thus reducing fibroblast proliferation and scar formation.", notes: "Local tissue irritation, delayed wound healing. Handle as a chemotherapy agent (gloves, careful disposal). Potential for systemic absorption is low with topical use but exists." },
+            { medication: "Cisplatin", indication: "Endobronchial tumors (experimental/palliative) - Intratumoral injection or topical", doseMgPerKg: "Highly variable, investigational. e.g., 10-30mg in 10-20mL NS for injection.", concentrationMgPerMl: "Typically 1mg/mL solution for injection.", volumeMlPerKg: "Depends on tumor size and protocol.", maxDoseMg: "Dose and safety not well established for endobronchial route.", mechanism: "Platinum-based chemotherapy agent. Cross-links DNA, leading to apoptosis and cell death.", notes: "Nephrotoxicity, ototoxicity, myelosuppression are concerns with systemic use. Local effects and systemic absorption with endobronchial use are not well studied. Handle as chemotherapy." },
+            { 
+                medication: "Factor VIIa (Recombinant)", 
+                indication: "Life-threatening hemorrhage uncontrolled by other means. Severe Diffuse Alveolar Hemorrhage (DAH).", 
+                doseMgPerKg: "Usually 90 mcg/kg IV (range 30-120 mcg/kg), may repeat Q2-4h until hemostasis. Data for endobronchial use is very limited, off-label, and dose not established (e.g., 50-100mcg/mL in 5-10mL NS instilled).", 
+                concentrationMgPerMl: "Reconstitute to 1mg/mL (e.g., 1mg vial + 1mL SWFI; 2mg vial + 2mL SWFI). For topical: can be used at 1mg/mL or further diluted.", 
+                volumeMlPerKg: "IV: Based on mcg/kg dose and 1mg/mL concentration. Endobronchial: Small volume (e.g. 1-5mL of reconstituted or diluted solution) per affected segment/lung.", 
+                maxDoseMg: "IV: Not well defined in acute bleed, individualized based on response and risk factors. Topical: Total dose typically one vial (1 or 2mg).", 
+                mechanism: "Activates Factor X directly on the surface of activated platelets and areas of tissue factor exposure. This leads to a rapid thrombin burst, converting fibrinogen to fibrin, and forming a stable clot at the site of injury, independent of Factors VIII/IX.", 
+                notes: "VERY Expensive. Short half-life (2-3h). Risk of thromboembolic events (MI, CVA, DVT/PE) - weigh risk/benefit carefully. Use only if other measures (TXA, correction of coagulopathy, source control) fail or are insufficient. Essential to consult hematology prior to use. For endobronchial use: optimal dose, safety, and efficacy are not established; it's an off-label consideration in dire circumstances. Ensure product is NovoSeven RT (room temperature stable after reconstitution for a few hours)."
+            }
+        ];
+
+        const chopExperienceData = [
+            { medication: "Lidocaine", indication: "Topical Anesthesia", experience: "Routinely used for topical anesthesia during bronchoscopy. Typically 1-2% solution sprayed via working channel or instilled directly. Effective in reducing cough and discomfort." },
+            { medication: "Lidocaine", indication: "Ventricular Arrhythmias", experience: "Rarely used for this indication during bronchoscopy unless severe arrhythmia develops and other measures fail. Standard ACLS dosing would apply." },
+            { medication: "Epinephrine (Racemic)", indication: "Airway Edema / Stridor", experience: "Commonly used for post-intubation stridor or significant airway edema. Nebulized form preferred. Can be instilled if upper airway obstruction." },
+            { medication: "Epinephrine (Racemic)", indication: "Bleeding", experience: "Used for significant localized bleeding. Diluted solution (e.g., 1:10,000 or 1:100,000) applied topically via soaked pledgets or slow instillation. Effective for vasoconstriction." },
+            { medication: "Tranexamic Acid (TXA)", indication: "Bleeding", experience: "Increasingly used for persistent oozing post-biopsy or in cases of DAH. Can be given IV pre-procedure or instilled topically. Good experience with topical application reducing need for more aggressive measures." },
+            { medication: "Atropine", indication: "Bradycardia", experience: "Standard component of pre-medication for some practitioners to prevent vagally-mediated bradycardia, especially in infants or if airway manipulation is expected to be prolonged. Also used therapeutically if bradycardia occurs." },
+            { medication: "Atropine", indication: "Secretions", experience: "Effective in reducing airway secretions if excessive. Glycopyrrolate often preferred due to longer duration and fewer CNS effects." },
+            { medication: "Glycopyrrolate", indication: "Bradycardia", experience: "Often preferred over atropine for pre-medication due to longer duration and less tachycardia. Used therapeutically for bradycardia as well." },
+            { medication: "Glycopyrrolate", indication: "Secretions", experience: "Excellent for reducing secretions. Commonly part of pre-medication regimen." },
+            { medication: "Normal Saline (0.9% NaCl)", indication: "Lavage / Diluent", experience: "Standard for BAL, clearing secretions, and as a diluent for other medications. Used in virtually all bronchoscopies." },
+            { medication: "Acetylcysteine (Mucomyst)", indication: "Mucus Plugs", experience: "Used for thick, tenacious mucus plugs not cleared by saline lavage alone. Administered via instillation. Pre-treatment with a bronchodilator is recommended to prevent bronchospasm." },
+            { medication: "Dornase Alfa (Pulmozyme)", indication: "CF / Purulent Secretions", experience: "Used in select cases of extremely purulent secretions, particularly in CF patients, if standard lavage is insufficient. Instilled directly. Benefit needs to be weighed against cost." },
+            { medication: "Surfactant (Poractant alfa - Curosurf)", indication: "Severe ARDS / Surfactant Deficiency", experience: "Reserved for severe cases of ARDS or suspected surfactant deficiency where ventilation is difficult. Requires careful administration technique and monitoring." },
+            { medication: "Budesonide", indication: "Airway Inflammation", experience: "Occasionally used nebulized post-procedure for significant airway inflammation or stridor. Direct instillation less common but considered in specific scenarios." },
+            { medication: "Albuterol", indication: "Bronchospasm", experience: "Standard treatment for bronchospasm if it occurs during or after the procedure. Can be given via nebulizer attached to bronchoscope port or via ETT if intubated." },
+            { medication: "Ipratropium Bromide", indication: "Bronchospasm", experience: "Used as an adjunct to albuterol for bronchospasm, or if cholinergic component is suspected. Less commonly used as a single agent." },
+            { medication: "Mitomycin C", indication: "Airway Stenosis", experience: "Used in conjunction with ENT or surgery for recurrent airway stenosis post-dilation. Applied topically. Requires careful handling and specific protocols." },
+            { 
+                medication: "Factor VIIa (Recombinant)", 
+                indication: "Life-threatening refractory Diffuse Alveolar Hemorrhage (DAH) or critical airway bleeding.", 
+                experience: "Reserved for catastrophic bleeding unresponsive to all other standard therapies (TXA, epinephrine, tamponade, correction of coagulopathy). Requires mandatory Hematology consultation prior to consideration/use. IV administration is the primary route. Endobronchial application (instillation of reconstituted solution) is considered experimental/compassionate use, typically in very small aliquots (e.g., 0.5-1mg in 1-2mL NS per site) directly to bleeding source, after IV dose given or if IV access is impossible/delayed and patient is exsanguinating. Discuss specific risks/benefits with Hematology and attending physician. Extreme caution due to high cost and thrombotic risk."
+            }
+        ];
+
+        const referencesData = [
+            { medication: "Lidocaine", text: "Miller RD, et al. Miller's Anesthesia. 9th ed. Elsevier; 2020.", link: "", takeaway: "Standard textbook reference for anesthetic properties and dosing." },
+            { medication: "Lidocaine", text: "Katzung BG, et al. Basic & Clinical Pharmacology. 15th ed. McGraw-Hill; 2021.", link: "", takeaway: "Pharmacology details, mechanism of action, side effects." },
+            { medication: "Lidocaine", text: "American Heart Association. Pediatric Advanced Life Support Provider Manual. 2020.", link: "", takeaway: "Dosing for arrhythmias (though less common for bronchoscopic topical use)." },
+            { medication: "Lidocaine", text: "Chhajed PN, et al. Safety of lidocaine administration during flexible bronchoscopy. Respiration. 2005;72(6):615-8.", link: "https://pubmed.ncbi.nlm.nih.gov/16357509/", takeaway: "Study on safety and plasma concentrations of lidocaine during bronchoscopy." },
+            { medication: "Epinephrine (Racemic)", text: "Waisman Y, et al. Prospective randomized double-blind study comparing L-epinephrine and racemic epinephrine aerosols in the treatment of laryngotracheitis (croup). Pediatrics. 1992;89(2):302-6.", link: "https://pubmed.ncbi.nlm.nih.gov/1734345/", takeaway: "Comparison study, relevant for understanding efficacy in upper airway obstruction." },
+            { medication: "Epinephrine (Racemic)", text: "Tasker RC, et al. Smith's Anesthesia for Infants and Children. 9th ed. Elsevier; 2017.", link: "", takeaway: "Pediatric anesthesia considerations for epinephrine use." },
+            { medication: "Epinephrine (Racemic)", text: "Sakles JC, et al. Topical epinephrine for the treatment of epistaxis. Ann Emerg Med. 2001;37(3):366-8.", link: "", takeaway: "Although for epistaxis, principles of topical vasoconstriction are relevant." },
+            { medication: "Tranexamic Acid (TXA)", text: "Pacheco-Lopez G, et al. Tranexamic acid for the treatment of diffuse alveolar hemorrhage in pediatric patients. Pediatr Pulmonol. 2014;49(11):1094-8.", link: "https://pubmed.ncbi.nlm.nih.gov/24482368/", takeaway: "Use of TXA in pediatric DAH, including endobronchial administration." },
+            { medication: "Tranexamic Acid (TXA)", text: "CRASH-2 trial collaborators. Effects of tranexamic acid on death, vascular occlusive events, and blood transfusion in trauma patients with significant haemorrhage (CRASH-2): a randomised, placebo-controlled trial. Lancet. 2010;376(9734):23-32.", link: "https://pubmed.ncbi.nlm.nih.gov/20554319/", takeaway: "Landmark trial on TXA in trauma, though systemic, it underpins its antifibrinolytic efficacy." },
+            { medication: "Tranexamic Acid (TXA)", text: "Solomon C, et al. Tranexamic acid in paediatric cardiac surgery: a systematic review and meta-analysis. Br J Anaesth. 2011;106(3):333-41.", link: "", takeaway: "Systemic use in pediatrics, relevant for safety and dosing considerations." },
+            { medication: "Atropine", text: "American Heart Association. Pediatric Advanced Life Support Provider Manual. 2020.", link: "", takeaway: "Standard PALS dosing for bradycardia." },
+            { medication: "Atropine", text: "Tobias JD. Atropine vs. glycopyrrolate: which is the better antisialagogue for paediatric anaesthesia? Paediatr Anaesth. 2003;13(4):273-5.", link: "", takeaway: "Comparison of atropine and glycopyrrolate as antisialagogues." },
+            { medication: "Glycopyrrolate", text: "Mirakhur RK, Dundee JW. Comparison of the effects of atropine and glycopyrrolate on various end-organs. J R Soc Med. 1983;76(8):657-60.", link: "", takeaway: "Pharmacological comparison, highlighting glycopyrrolate's selectivity." },
+            { medication: "Glycopyrrolate", text: "FDA Prescribing Information for Robinul (Glycopyrrolate).", link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2010/013724s032,013725s030,013726s029lbl.pdf", takeaway: "Official dosing and administration guidelines." },
+            { medication: "Normal Saline (0.9% NaCl)", text: "Ernst A, Silvestri GA, et al. ACCP evidence-based clinical practice guidelines. Interventional pulmonology. Chest. 2013;144(3):e475-e491.", link: "", takeaway: "Guidelines on BAL technique often mention saline volumes." },
+            { medication: "Normal Saline (0.9% NaCl)", text: "Reynolds HY. Bronchoalveolar lavage. Am Rev Respir Dis. 1987;135(1):250-63.", link: "", takeaway: "Classic review on BAL, discussing fluid types and volumes." },
+            { medication: "Acetylcysteine (Mucomyst)", text: "Grandjean T, Sullivant K. Acetylcysteine for the treatment of tenacious bronchial secretions. Respir Care. 2002;47(1):84-7.", link: "", takeaway: "Review on clinical use of acetylcysteine." },
+            { medication: "Acetylcysteine (Mucomyst)", text: "Drazen JM, et al. NIH workshop summary. The role of N-acetylcysteine in the treatment of COPD. Chest. 1988;94(4):872-5.", link: "", takeaway: "Although for COPD, discusses mechanism and potential for bronchospasm." },
+            { medication: "Acetylcysteine (Mucomyst)", text: "FDA Prescribing Information for Acetylcysteine Solution.", link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2016/016747s033lbl.pdf", takeaway: "Official information including warnings about bronchospasm." },
+            { medication: "Dornase Alfa (Pulmozyme)", text: "Quan JM, et al. A two-year randomized, placebo-controlled trial of dornase alfa in patients with cystic fibrosis with severe lung disease. J Pediatr. 2001;139(6):813-20.", link: "https://pubmed.ncbi.nlm.nih.gov/11743510/", takeaway: "Long-term efficacy and safety in CF." },
+            { medication: "Dornase Alfa (Pulmozyme)", text: "FDA Prescribing Information for Pulmozyme (Dornase Alfa).", link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2014/103398s5173lbl.pdf", takeaway: "Official dosing and administration for CF." },
+            { medication: "Dornase Alfa (Pulmozyme)", text: "Slattery DM, et al. Dornase alfa in the treatment of diffuse alveolar hemorrhage. Pediatr Pulmonol. 2002;34(3):231-3.", link: "", takeaway: "Case report on off-label use for DAH." },
+            { medication: "Surfactant (Poractant alfa - Curosurf)", text: "Malloy MH, et al. Surfactant therapy for respiratory distress syndrome in premature infants. Cochrane Database Syst Rev. 2017;CD000403.", link: "", takeaway: "Cochrane review on surfactant efficacy in RDS." },
+            { medication: "Surfactant (Poractant alfa - Curosurf)", text: "FDA Prescribing Information for Curosurf (Poractant alfa).", link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2012/020332s018lbl.pdf", takeaway: "Official dosing and administration." },
+            { medication: "Surfactant (Poractant alfa - Curosurf)", text: "Willson DF, et al. Instillation of surfactant in the treatment of ARDS in children. Respir Care. 2005;50(1):114-20.", link: "", takeaway: "Use in pediatric ARDS." },
+            { medication: "Budesonide", text: "Szefler SJ, et al. Characterization of within-subject responses to fluticasone propionate and budesonide in childhood asthma. J Allergy Clin Immunol. 2000;105(1 Pt 1):67-75.", link: "", takeaway: "Pharmacokinetics and dynamics of inhaled corticosteroids." },
+            { medication: "Budesonide", text: "FDA Prescribing Information for Pulmicort Respules (Budesonide).", link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2008/020929s024lbl.pdf", takeaway: "Official dosing for nebulization." },
+            { medication: "Budesonide", text: "Klassen TP, et al. Nebulized budesonide and oral dexamethasone for treatment of croup: a randomized controlled trial. JAMA. 1994;272(19):1510-3.", link: "", takeaway: "Efficacy in croup, relevant for airway inflammation." },
+            { medication: "Albuterol", text: "Global Initiative for Asthma (GINA). Global Strategy for Asthma Management and Prevention. 2023.", link: "https://ginasthma.org/reports/", takeaway: "Guidelines for asthma management, including SABA use." },
+            { medication: "Albuterol", text: "National Asthma Education and Prevention Program. Expert Panel Report 3: Guidelines for the Diagnosis and Management of Asthma. NIH Publication No. 07-4051. 2007.", link: "", takeaway: "Comprehensive guidelines on asthma treatment." },
+            { medication: "Albuterol", text: "FDA Prescribing Information for Proventil HFA (Albuterol).", link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2012/020507s033lbl.pdf", takeaway: "Official MDI prescribing information." },
+            { medication: "Ipratropium Bromide", text: "Gross NJ. Ipratropium bromide. N Engl J Med. 1988;319(8):486-94.", link: "", takeaway: "Review of ipratropium pharmacology and clinical use." },
+            { medication: "Ipratropium Bromide", text: "FDA Prescribing Information for Atrovent HFA (Ipratropium Bromide).", link: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2004/21527s000lbl.pdf", takeaway: "Official MDI prescribing information." },
+            { medication: "Mitomycin C", text: "Rahbar R, et al. The role of mitomycin in the prevention and treatment of scar formation in the pediatric airway. Arch Otolaryngol Head Neck Surg. 2003;129(9):996-1001.", link: "https://pubmed.ncbi.nlm.nih.gov/12975281/", takeaway: "Use of mitomycin C in pediatric airway stenosis." },
+            { medication: "Mitomycin C", text: "Perepelitsyn I, Shapshay SM. Endoscopic treatment of laryngeal and tracheal stenosis--has mitomycin C improved the outcome? Otolaryngol Head Neck Surg. 2004;131(1):16-20.", link: "", takeaway: "Review of mitomycin C in airway stenosis." },
+            { medication: "Mitomycin C", text: "Hartnick CJ, et al. Topical mitomycin C application in the pediatric airway: a review of the evidence. Laryngoscope. 2007;117(7):1161-5.", link: "", takeaway: "Evidence review for topical mitomycin C in pediatric airway." },
+            { medication: "Cisplatin", text: "Zarogoulidis P, et al. Cisplatin and docetaxel intratumoral administration in patients with non-small cell lung cancer. J Thorac Dis. 2013;5(Suppl 4):S373-S380.", link: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3791510/", takeaway: "Intratumoral cisplatin for NSCLC (adults, but relevant concept)." },
+            { medication: "Cisplatin", text: "Van der Heijden HF, et al. Phase I/II study of endoscopic intratumoral cisplatin administration in patients with endobronchial carcinoma. J Thorac Oncol. 2010;5(2):236-41.", link: "", takeaway: "Study on intratumoral cisplatin for endobronchial tumors." },
+            { 
+                medication: "Factor VIIa (Recombinant)", 
+                text: "Levi M, et al. Recombinant factor VIIa for life-threatening bleeding. N Engl J Med. 2010 Oct 28;363(18):1761-71.", 
+                link: "https://www.nejm.org/doi/full/10.1056/NEJMct0907339", 
+                takeaway: "Comprehensive review of rFVIIa for severe bleeding, discusses efficacy, risks (especially thromboembolic), and appropriate patient selection for systemic use." 
+            },
+            { 
+                medication: "Factor VIIa (Recombinant)", 
+                text: "Heslet L, Nielsen JD, Nepper-Christensen S, et al. Intratracheal administration of recombinant factor VIIa in diffuse alveolar haemorrhage: a KULE study. Thorax. 2006 Feb;61(2):173-4.", 
+                link: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2117100/", 
+                takeaway: "Small case series (4 patients) on intratracheal rFVIIa for DAH, suggesting potential benefit and feasibility. Doses varied." 
+            },
+            { 
+                medication: "Factor VIIa (Recombinant)", 
+                text: "Pathak V, et al. Recombinant Factor VIIa for Diffuse Alveolar Hemorrhage in Allogeneic Stem Cell Transplant Recipients. Clin Med Insights Blood Disord. 2015 Jun 17;8:1-6.", 
+                link: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4476325/", 
+                takeaway: "Retrospective study showing potential benefit of rFVIIa (IV and/or topical) for DAH in SCT patients, but high mortality remains. Highlights need for controlled trials." 
+            }
+        ];
+
+        // --- DOM Elements ---
+        const medicationSelect = document.getElementById('medication-select');
+        const medicationSearch = document.getElementById('medication-search');
+        const medicationDetailsDiv = document.getElementById('medication-details');
+        const clearSelectionButton = document.getElementById('clear-selection');
+
+        // --- Populate Medication Dropdown ---
+        function populateMedicationDropdown(meds) {
+            const sortedMeds = meds.sort((a, b) => a.medication.localeCompare(b.medication));
+            medicationSelect.innerHTML = '<option value="">-- Select a Medication --</option>'; // Clear existing options
+            sortedMeds.forEach(med => {
+                const option = document.createElement('option');
+                option.value = med.medication;
+                option.textContent = med.medication;
+                medicationSelect.appendChild(option);
+            });
+        }
+        
+        // Initial population
+        populateMedicationDropdown(dosingData);
+
+
+        // --- Display Medication Details ---
+        function displayMedicationDetails(medName) {
+            if (!medName) {
+                medicationDetailsDiv.innerHTML = `<div class="text-center text-slate-500 italic p-10">Please select a medication from the dropdown or use the search bar.</div>`;
+                return;
+            }
+
+            const dosingInfo = dosingData.find(m => m.medication === medName);
+            const experiences = chopExperienceData.filter(e => e.medication === medName);
+            const references = referencesData.filter(r => r.medication === medName);
+
+            if (!dosingInfo) {
+                medicationDetailsDiv.innerHTML = `<div class="text-center text-red-500 p-10">Medication details not found.</div>`;
+                return;
+            }
+
+            let html = `<div class="info-card bg-sky-50 p-6 rounded-lg shadow-lg border border-sky-200">`;
+            html += `<h2 class="text-2xl font-bold text-sky-700 mb-4">${dosingInfo.medication}</h2>`;
+
+            // Dosing Information Table
+            html += `<h3 class="text-xl font-semibold text-sky-600 mt-6 mb-3">Dosing Information</h3>`;
+            html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm text-slate-700">`;
+            if (dosingInfo.indication) html += `<div><strong class="text-slate-800">Indication(s):</strong></div><div>${dosingInfo.indication}</div>`;
+            if (dosingInfo.doseMgPerKg) html += `<div><strong class="text-slate-800">Dose:</strong></div><div>${dosingInfo.doseMgPerKg}</div>`;
+            if (dosingInfo.concentrationMgPerMl) html += `<div><strong class="text-slate-800">Concentration:</strong></div><div>${dosingInfo.concentrationMgPerMl}</div>`;
+            if (dosingInfo.volumeMlPerKg) html += `<div><strong class="text-slate-800">Volume to Administer:</strong></div><div>${dosingInfo.volumeMlPerKg}</div>`;
+            if (dosingInfo.maxDoseMg) html += `<div><strong class="text-slate-800">Max Dose:</strong></div><div>${dosingInfo.maxDoseMg}</div>`;
+            html += `</div>`; // Close grid
+
+            if (dosingInfo.mechanism) {
+                html += `<h4 class="text-md font-semibold text-slate-800 mt-4 mb-1">Mechanism of Action:</h4>`;
+                html += `<p class="text-sm text-slate-600">${dosingInfo.mechanism}</p>`;
+            }
+            if (dosingInfo.notes) {
+                html += `<h4 class="text-md font-semibold text-slate-800 mt-4 mb-1">Notes:</h4>`;
+                html += `<p class="text-sm text-slate-600 bg-amber-50 p-3 rounded-md border border-amber-200">${dosingInfo.notes}</p>`;
+            }
+            html += `</div>`; // Close info-card for dosing
+
+            // CHOP Experience
+            if (experiences.length > 0) {
+                html += `<div class="info-card bg-emerald-50 p-6 rounded-lg shadow-lg border border-emerald-200 mt-6">`;
+                html += `<h3 class="text-xl font-semibold text-emerald-700 mb-3">CHOP Experience</h3>`;
+                html += `<div class="space-y-4">`;
+                experiences.forEach(exp => {
+                    html += `<div class="p-3 bg-white rounded-md shadow-sm border border-slate-200">`;
+                    html += `<p class="text-sm text-emerald-800"><strong>Indication:</strong> ${exp.indication}</p>`;
+                    html += `<p class="text-sm text-slate-600 mt-1">${exp.experience}</p>`;
+                    html += `</div>`;
+                });
+                html += `</div></div>`;
+            } else {
+                 html += `<div class="info-card bg-slate-50 p-6 rounded-lg shadow-lg border border-slate-200 mt-6">`;
+                 html += `<h3 class="text-xl font-semibold text-slate-700 mb-3">CHOP Experience</h3>`;
+                 html += `<p class="text-sm text-slate-500 italic">No specific CHOP experience documented for this medication.</p>`;
+                 html += `</div>`;
+            }
+
+            // References
+            if (references.length > 0) {
+                html += `<div class="info-card bg-indigo-50 p-6 rounded-lg shadow-lg border border-indigo-200 mt-6">`;
+                html += `<h3 class="text-xl font-semibold text-indigo-700 mb-3">Relevant Literature</h3>`;
+                html += `<ul class="list-disc list-inside space-y-3 content-section">`;
+                references.forEach(ref => {
+                    html += `<li class="text-sm text-slate-700">`;
+                    html += `${ref.text}`;
+                    if (ref.link) {
+                        html += ` <a href="${ref.link}" target="_blank" class="text-sky-600 hover:text-sky-800 hover:underline font-medium">[Link]</a>`;
+                    }
+                    if (ref.takeaway) {
+                        html += `<p class="text-xs text-slate-500 italic ml-4 mt-1 p-2 bg-white rounded border border-slate-100"><strong>Key Takeaway:</strong> ${ref.takeaway}</p>`;
+                    }
+                    html += `</li>`;
+                });
+                html += `</ul></div>`;
+            } else {
+                html += `<div class="info-card bg-slate-50 p-6 rounded-lg shadow-lg border border-slate-200 mt-6">`;
+                html += `<h3 class="text-xl font-semibold text-slate-700 mb-3">Relevant Literature</h3>`;
+                html += `<p class="text-sm text-slate-500 italic">No specific references documented for this medication.</p>`;
+                html += `</div>`;
+            }
+            
+            medicationDetailsDiv.innerHTML = html;
+        }
+
+        // --- Event Listeners ---
+        medicationSelect.addEventListener('change', (event) => {
+            const selectedMedName = event.target.value;
+            medicationSearch.value = selectedMedName; 
+            displayMedicationDetails(selectedMedName);
+        });
+        
+        medicationSearch.addEventListener('input', (event) => {
+            const searchTerm = event.target.value.toLowerCase();
+            const filteredMeds = dosingData.filter(med => med.medication.toLowerCase().includes(searchTerm));
+            
+            const currentDropdownValue = medicationSelect.value;
+            populateMedicationDropdown(filteredMeds);
+            
+            // Try to preserve selection if it's still in the filtered list
+            if (filteredMeds.some(med => med.medication === currentDropdownValue)) {
+                medicationSelect.value = currentDropdownValue;
+            } else if (filteredMeds.length === 1) { // If only one result, auto-select it
+                medicationSelect.value = filteredMeds[0].medication;
+            } else {
+                medicationSelect.value = ""; // Otherwise, reset dropdown selection
+            }
+            
+            // Update details based on new dropdown state or if search is cleared
+            if (medicationSelect.value) {
+                 displayMedicationDetails(medicationSelect.value);
+            } else if (searchTerm === "") {
+                displayMedicationDetails("");
+            } else {
+                // If search has text but no specific item is auto-selected, show prompt
+                 medicationDetailsDiv.innerHTML = `<div class="text-center text-slate-500 italic p-10">Multiple matches or no exact match. Please refine your search or select from the dropdown.</div>`;
+            }
+        });
+
+        clearSelectionButton.addEventListener('click', () => {
+            medicationSearch.value = '';
+            populateMedicationDropdown(dosingData); 
+            medicationSelect.value = ''; 
+            displayMedicationDetails(''); 
+        });
+
+        // Initial state
+        displayMedicationDetails('');
+
+    </script>
+</body>
+</html>
